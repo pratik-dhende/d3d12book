@@ -125,6 +125,8 @@ private:
     float mRadius = 15.0f;
 
     POINT mLastMousePos;
+
+	XMFLOAT3 mPointLightWorldPos[10];
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -362,7 +364,7 @@ void LitColumnsApp::UpdateObjectCBs(const GameTimer& gt)
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
 		if(e->NumFramesDirty > 0)
-		{
+		{	
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
@@ -428,12 +430,10 @@ void LitColumnsApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
 	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-	mMainPassCB.Lights[0].Direction = { std::cosf(DirectX::XM_PIDIV4), -1.0f, std::cosf(DirectX::XM_PIDIV4) };
-	mMainPassCB.Lights[0].Strength = { 0.33f, 0.0f, 0.0f };
-	mMainPassCB.Lights[1].Direction = { -std::cosf(DirectX::XM_PIDIV4), -1.0f, std::cosf(DirectX::XM_PIDIV4) };
-	mMainPassCB.Lights[1].Strength = { 0.0f, 0.33f, 0.0f };
-	mMainPassCB.Lights[2].Direction = { std::cosf(DirectX::XM_PIDIV4), -1.0f, -std::cosf(DirectX::XM_PIDIV4) };
-	mMainPassCB.Lights[2].Strength = { 0.0f, 0.0f, 0.33f };
+
+	for (int i = 0; i < 10; ++i) {
+		mMainPassCB.Lights[i].Position = mPointLightWorldPos[i];
+	}
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
@@ -850,6 +850,8 @@ void LitColumnsApp::BuildRenderItems()
 		leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
 		leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
 
+		XMStoreFloat3(&mPointLightWorldPos[2 * i], leftSphereWorld.r[3]);
+
 		XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
 		rightSphereRitem->TexTransform = MathHelper::Identity4x4();
 		rightSphereRitem->ObjCBIndex = objCBIndex++;
@@ -859,6 +861,8 @@ void LitColumnsApp::BuildRenderItems()
 		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
 		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
 		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+
+		XMStoreFloat3(&mPointLightWorldPos[2 * i + 1], rightSphereWorld.r[3]);
 
 		mAllRitems.push_back(std::move(leftCylRitem));
 		mAllRitems.push_back(std::move(rightCylRitem));
